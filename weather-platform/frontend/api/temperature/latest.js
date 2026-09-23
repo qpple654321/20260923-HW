@@ -6,11 +6,25 @@ export default async function handler(req,res) {
 
   try {
     const url = new URL("https://opendata.cwa.gov.tw/api/v1/rest/datastore/O-A0001-001");
-    url.searchParams.set("Authorization", key);
-    url.searchParams.set("format", "JSON");
+    const response = await fetch(url, {
+      headers: {
+        Authorization: key,
+        Accept: "application/json"
+      }
+    });
 
-    const response = await fetch(url);
-    const data = await response.json();
+    const raw = await response.text();
+    let data;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      return res.status(502).json({
+        error: "CWA returned non-JSON data",
+        status: response.status,
+        contentType: response.headers.get("content-type") || "",
+        preview: raw.slice(0, 200)
+      });
+    }
 
     if (!response.ok) {
       return res.status(response.status).json({
