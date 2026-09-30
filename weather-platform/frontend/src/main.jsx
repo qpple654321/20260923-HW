@@ -80,9 +80,18 @@ function App(){
   const choose=c=>{setCounty(c);setSelected(c==="全部"?null:c);setHistoryDate("")};
 
   return <div className="app">
-    <header className="top"><div className="brand"><b>WEATHER</b><span>CWA</span></div><div className="topinfo">☁ 台灣　|　{time.toLocaleString("zh-TW",{hour12:false})}　　↻ 自動更新：5 分鐘　⚙</div></header>
+    <header className="top">
+  <div className="brand">
+    <div className="brand-mark">☁</div>
+    <div><b>中央氣象署</b><span>CENTRAL WEATHER ADMINISTRATION</span></div>
+  </div>
+  <nav className="topnav" aria-label="主要導覽">
+    <span className="active">地圖</span><span>觀測</span><span>歷史資料</span>
+  </nav>
+  <div className="topinfo">{time.toLocaleString("zh-TW",{hour12:false})}　|　自動更新 5 分鐘　<button onClick={load}>{loading?"更新中…":"↻ 更新"}</button></div>
+</header>
     <div className="layout"><section className="content">
-      <div className="title"><div><h1>📍 台灣氣象觀測地圖</h1><p>點擊地圖上的縣市，即可查看該地區即時氣象資訊</p></div><button onClick={load}>{loading?"更新中…":"↻ 更新"}</button></div>
+      <div className="title"><div><div className="breadcrumb">地圖　›　地面觀測</div><h1>臺灣地面氣象觀測</h1><p>選擇縣市或測站，即時查看溫度、相對濕度、風速與降雨資料</p></div></div>
       <div className="grid">
         <div className="mapcard"><MapContainer center={[23.7,120.95]}zoom={7}scrollWheelZoom><TileLayer attribution="&copy; OpenStreetMap contributors" url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"/><CountyLayer geo={geo} stations={s} selected={area} onSelect={choose}/>{shown.map(x=><CircleMarker key={x.station_id} center={[x.latitude,x.longitude]} radius={7} pathOptions={{color:tempColor(x.temperature),fillColor:tempColor(x.temperature),fillOpacity:.95}} eventHandlers={{click:()=>choose(x.county)}}><Popup><strong>{x.station_name||x.station_id}</strong><br/>🌡 {x.temperature.toFixed(1)} °C<br/>{x.county||"未知地區"} {x.town||""}<br/>💧 {x.humidity??"--"}%　💨 {x.wind_speed??"--"} m/s</Popup></CircleMarker>)}</MapContainer><div className="legend"><span><i style={{background:"#22c55e"}}/>低溫</span><span><i style={{background:"#eab308"}}/>舒適</span><span><i style={{background:"#f97316"}}/>偏熱</span><span><i style={{background:"#ef4444"}}/>高溫</span></div></div>
         <div className="side">
