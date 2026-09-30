@@ -1,3 +1,5 @@
+import { saveObservations } from "./db.js";
+
 export default async function handler(req,res) {
   const key = process.env.CWA_API_KEY;
   if (!key) {
@@ -9,10 +11,7 @@ export default async function handler(req,res) {
     url.searchParams.set("Authorization", key);
     url.searchParams.set("format", "JSON");
 
-    const response = await fetch(url, {
-      headers: { Accept: "application/json" }
-    });
-
+    const response = await fetch(url, { headers: { Accept: "application/json" } });
     const raw = await response.text();
     let data;
     try {
@@ -41,7 +40,6 @@ export default async function handler(req,res) {
           const n = Number(value);
           return Number.isFinite(n) && n !== -99 ? n : null;
         };
-
         return {
           station_id: station?.StationId || "",
           station_name: station?.StationName || station?.StationId || "",
@@ -57,11 +55,11 @@ export default async function handler(req,res) {
           observed_at: station?.ObsTime?.DateTime || null
         };
       })
-      .filter((s) =>
-        s.latitude !== null &&
-        s.longitude !== null &&
-        s.temperature !== null
-      );
+      .filter(s => s.latitude !== null && s.longitude !== null && s.temperature !== null);
+
+    try { saveObservations(stations); } catch (dbError) {
+      console.error("SQLite save failed:", dbError);
+    }
 
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=60");
     return res.status(200).json({
