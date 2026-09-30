@@ -5,7 +5,7 @@ export default function handler(req, res) {
     const url = new URL(req.url, "http://localhost");
     const county = url.searchParams.get("county") || "全部";
     const date = url.searchParams.get("date") || new Date().toISOString().slice(0, 10);
-    const result = queryHistory(county, date);
+    const result = await queryHistory(county, date);
     res.setHeader("Cache-Control", "no-store");
     return res.status(200).json({
       county,
