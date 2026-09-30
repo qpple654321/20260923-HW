@@ -1,5 +1,6 @@
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync } from "node:fs";
+import { importHistoricalYear } from "./historical.js";
 
 const dbPath = "/tmp/cwa-weather.sqlite";
 let db;
@@ -82,40 +83,76 @@ export function saveObservations(stations) {
   upsert.close();
 }
 
-export function queryHistory(county, date) {
+export async function queryHistory(county, date) {
   const database = getDb();
-  const target = county && county !== "全部" ? county : null;
-  const sql = target
+  const target = county && county !== "全部" ? county : "全部";
+  const safeDate = /^\\d{4}-\\d{2}-\\d{2}$/.test(date || "") ? date : new Date().toISOString().slice(0,10);
+  const year = Number(safeDate.slice(0,4));
+
+  const imported = database.prepare(
+    "SELECT 1 FROM HistoricalImports WHERE county=? AND data_year=? LIMIT 1"
+  ).get(target, year);
+
+  if (!imported) {
+    const insert = database.prepare(`
+      INSERT OR IGNORE INTO WeatherObservations
+        (station_id, station_name, county, town, observed_at, temperature, humidity, wind_speed, rain)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    try {
+      await importHistoricalYear(database, target, year, row => {
+        insert.run(
+          row.station_id, row.station_name, row.county, row.town,
+          row.observed_at, row.temperature, row.humidity, row.wind_speed, row.rain
+        );
+      });
+      database.prepare(
+        "INSERT OR REPLACE INTO HistoricalImports(county,data_year,imported_at) VALUES(?,?,?)"
+      ).run(target, year, new Date().toISOString());
+    } finally {
+      insert.close();
+    }
+  }
+
+  const sql = target === "全部"
     ? `
-      SELECT substr(observed_at,1,13) AS hour,
+      SELECT substr(observed_at,1,10) AS date,
              ROUND(AVG(temperature),1) AS avgTemp,
              ROUND(MIN(temperature),1) AS minTemp,
-             ROUND(MAX(temperature),1) AS maxTemp
+             ROUND(MAX(temperature),1) AS maxTemp,
+             ROUND(AVG(humidity),0) AS avgHumidity,
+             ROUND(AVG(wind_speed),1) AS avgWind
       FROM WeatherObservations
-      WHERE county = ? AND substr(observed_at,1,10) = ?
-      GROUP BY substr(observed_at,1,13)
-      ORDER BY hour
+      WHERE substr(observed_at,1,10) BETWEEN date(?, '-3 day') AND date(?, '+3 day')
+        AND station_id NOT LIKE 'CWA:%'
+      GROUP BY substr(observed_at,1,10)
+      ORDER BY date
     `
     : `
-      SELECT substr(observed_at,1,13) AS hour,
+      SELECT substr(observed_at,1,10) AS date,
              ROUND(AVG(temperature),1) AS avgTemp,
              ROUND(MIN(temperature),1) AS minTemp,
-             ROUND(MAX(temperature),1) AS maxTemp
+             ROUND(MAX(temperature),1) AS maxTemp,
+             ROUND(AVG(humidity),0) AS avgHumidity,
+             ROUND(AVG(wind_speed),1) AS avgWind
       FROM WeatherObservations
-      WHERE substr(observed_at,1,10) = ?
-      GROUP BY substr(observed_at,1,13)
-      ORDER BY hour
+      WHERE county=? AND substr(observed_at,1,10) BETWEEN date(?, '-3 day') AND date(?, '+3 day')
+      GROUP BY substr(observed_at,1,10)
+      ORDER BY date
     `;
-  const rows = target
-    ? database.prepare(sql).all(target, date)
-    : database.prepare(sql).all(date);
 
-  const datesSql = target
-    ? "SELECT DISTINCT substr(observed_at,1,10) AS dataDate FROM WeatherObservations WHERE county=? ORDER BY dataDate DESC LIMIT 30"
-    : "SELECT DISTINCT substr(observed_at,1,10) AS dataDate FROM WeatherObservations ORDER BY dataDate DESC LIMIT 3650";
-  const dates = target
-    ? database.prepare(datesSql).all(target)
-    : database.prepare(datesSql).all();
+  const rows = target === "全部"
+    ? database.prepare(sql).all(safeDate, safeDate)
+    : database.prepare(sql).all(target, safeDate, safeDate);
 
+  const dates = availableDatesForYear(database, target, year);
   return { rows, dates, sql: sql.trim() };
+}
+
+function availableDatesForYear(database, county, year) {
+  const target = county && county !== "全部" ? county : "全部";
+  const rows = database.prepare(
+    "SELECT DISTINCT substr(observed_at,1,10) AS dataDate FROM WeatherObservations WHERE substr(observed_at,1,4)=? AND (county=? OR ?='全部') ORDER BY dataDate DESC"
+  ).all(String(year), target, target);
+  return rows;
 }
