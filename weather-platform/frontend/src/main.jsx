@@ -42,10 +42,18 @@ function LineChart({points}){
   </svg>;
 }
 
+function localDateISO(){
+  const d=new Date();
+  const y=d.getFullYear();
+  const m=String(d.getMonth()+1).padStart(2,"0");
+  const day=String(d.getDate()).padStart(2,"0");
+  return y+"-"+m+"-"+day;
+}
+
 function App(){
   const[s,setS]=useState([]),[selected,setSelected]=useState(null),[county,setCounty]=useState("全部");
   const[mode,setMode]=useState("temperature"),[geo,setGeo]=useState(null),[loading,setLoading]=useState(true),[time,setTime]=useState(new Date());
-  const[history,setHistory]=useState([]),[historyDate,setHistoryDate]=useState(new Date().toISOString().slice(0,10));
+  const[history,setHistory]=useState([]),[historyDate,setHistoryDate]=useState(localDateISO());
   const[forecast,setForecast]=useState([]),[forecastLoading,setForecastLoading]=useState(false);
 
   const load=()=>{
@@ -85,7 +93,7 @@ function App(){
   const hs=areaStations.filter(x=>x.humidity!=null),ws=areaStations.filter(x=>x.wind_speed!=null);
   const humidity=hs.length?hs.reduce((a,x)=>a+x.humidity,0)/hs.length:0;
   const wind=ws.length?ws.reduce((a,x)=>a+x.wind_speed,0)/ws.length:0;
-  const choose=c=>{setCounty(c);setSelected(c==="全部"?null:c);setHistoryDate("")};
+  const choose=c=>{setCounty(c);setSelected(c==="全部"?null:c);setHistoryDate(localDateISO())};
 
   return <div className="app">
     <header className="top">
@@ -106,7 +114,7 @@ function App(){
             <div className="metric-chart"><div className="metric-label">💨 風速 <b>{wind.toFixed(1)} m/s</b></div><div className="bar-list">{areaStations.slice(0,8).map(x=><div className="bar-row" key={x.station_id}><span>{x.station_name||x.station_id}</span><div className="bar-track"><i style={{width:(Math.min(100,(Number(x.wind_speed)||0)/15*100))+"%"}}/></div><b>{x.wind_speed==null?"--":Number(x.wind_speed).toFixed(1)+" m/s"}</b></div>)}</div></div>
           </div></div>
           <div className="card"><div className="cardtitle">縣市氣象觀測<select value={county}onChange={e=>choose(e.target.value)}>{counties.map(x=><option key={x}>{x}</option>)}</select></div><div className="countygrid">{counties.filter(x=>x!=="全部").map(c=>{const a=s.filter(x=>x.county===c),av=a.length?a.reduce((z,x)=>z+x.temperature,0)/a.length:null;return <button className={area===c?"countybtn selected":"countybtn"} key={c} onClick={()=>choose(c)}><span>{c}</span><b>{av==null?"--":av.toFixed(1)}°</b><small>{a.length} 測站</small></button>})}</div></div>
-          <div className="card forecast-card"><div className="cardtitle">未來三天天氣預測 <small className="chart-subtitle">{area||"全台"}</small></div><div className="forecast-grid">{forecast.map((d,i)=><div className="forecast-day" key={d.date||i}><b>{i===0?"今天":i===1?"明天":"後天"}</b><small>{d.date}</small><span>☁️</span><strong>{d.max_temp||"--"}° / {d.min_temp||"--"}°</strong><em>{d.weather||"資料讀取中"}</em><small>降雨機率 {d.rain_probability||"--"}%</small></div>)}</div>{forecastLoading&&<small className="sql-note">預報資料更新中…</small>}</div><div className="card history-card"><div className="cardtitle">歷史溫度（SQLite + SQL）<div className="history-controls"><input type="date" min="2020-01-01" max={new Date().toISOString().slice(0,10)} value={historyDate} onChange={e=>setHistoryDate(e.target.value)}/></div></div><LineChart points={history}/><small className="sql-note">資料來源：CWA 觀測時間 → SQLite WeatherObservations → SQL GROUP BY 日期/時段</small></div>
+          <div className="card forecast-card"><div className="cardtitle">未來三天天氣預測 <small className="chart-subtitle">{area||"全台"}</small></div><div className="forecast-grid">{forecast.map((d,i)=><div className="forecast-day" key={d.date||i}><b>{i===0?"今天":i===1?"明天":"後天"}</b><small>{d.date}</small><span>☁️</span><strong>{d.max_temp||"--"}° / {d.min_temp||"--"}°</strong><em>{d.weather||"資料讀取中"}</em><small>降雨機率 {d.rain_probability||"--"}%</small></div>)}</div>{forecastLoading&&<small className="sql-note">預報資料更新中…</small>}</div><div className="card history-card"><div className="cardtitle">歷史溫度（SQLite + SQL）<div className="history-controls"><input type="date" min="2020-01-01" max={localDateISO()} value={historyDate} onChange={e=>setHistoryDate(e.target.value)}/></div></div><LineChart points={history}/><small className="sql-note">資料來源：CWA 觀測時間 → SQLite WeatherObservations → SQL GROUP BY 日期/時段</small></div>
           <div className="card"><div className="cardtitle">測站資訊 <div className="tabs">{["temperature","wind","rain"].map(x=><button className={mode===x?"on":""}onClick={()=>setMode(x)}key={x}>{x==="temperature"?"溫度":x==="wind"?"風速":"降雨"}</button>)}</div></div><div className="tablehead"><span>測站</span><span>{mode==="temperature"?"溫度":mode==="wind"?"風速":"雨量"}</span><span>狀態</span></div><div className="rows">{areaStations.map(x=><button className="row" key={x.station_id} onClick={()=>choose(x.county)}><span><i style={{background:tempColor(x.temperature)}}/>{x.station_name||x.station_id}</span><b>{mode==="temperature"?x.temperature.toFixed(1)+"°":mode==="wind"?(x.wind_speed??"--")+" m/s":(x.rain??"--")+" mm"}</b><em>{level(x.temperature)}</em></button>)}</div></div>
         </div>
       </div>
