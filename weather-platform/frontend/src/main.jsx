@@ -77,7 +77,7 @@ function App(){
 
   const counties=useMemo(()=>["全部",...new Set(s.map(x=>x.county).filter(Boolean))],[s]);
   const area=selected||county!=="全部"?selected:null;
-  const shown=s.filter(x=>county==="全部"||x.county===county);
+  const shown=area?s.filter(x=>x.county===area):[];
   const areaStations=area?s.filter(x=>x.county===area):s;
   const avg=areaStations.length?areaStations.reduce((a,x)=>a+x.temperature,0)/areaStations.length:0;
   const max=areaStations.length?Math.max(...areaStations.map(x=>x.temperature)):0;
