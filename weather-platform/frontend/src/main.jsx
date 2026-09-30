@@ -91,7 +91,7 @@ function App(){
     <header className="top">
   <div className="brand">
     <div className="brand-mark">☁</div>
-    <div><b>中央氣象署</b><span>CENTRAL WEATHER ADMINISTRATION</span></div>
+    <div><b>臺灣氣象觀測</b><span>TAIWAN WEATHER OBSERVATION</span></div>
   </div>
   <nav className="topnav" aria-label="主要導覽">
     <span className="active">地圖</span><span>觀測</span><span>歷史資料</span>
