@@ -57,7 +57,7 @@ function App(){
     fetch(API+"/api/temperature/history?"+q).then(r=>r.json()).then(x=>{
       setHistory(x.points||[]);setDates(x.available_dates||[]);
       if(!d&&x.available_dates?.length)setHistoryDate(x.available_dates[0]);
-    }).catch(()=>{setHistory([]);setDates([])});
+    }).catch(()=>{setHistory([])});
   };
 
   useEffect(()=>{
@@ -98,7 +98,7 @@ function App(){
           <div className="weather card"><div className="weatherhead"><div><div className="cloud">☁️</div><h2>{area||"全台"}</h2><small>{area?"縣市即時氣象":"全台測站即時觀測"}　{areaStations.length} 個測站</small></div><div className="bigtemp">{avg.toFixed(1)}°C<div>{level(avg)}</div></div></div><div className="stats"><div>🌡<b>{min.toFixed(1)}° / {max.toFixed(1)}°</b><small>最低 / 最高</small></div><div>💧<b>{humidity.toFixed(0)}%</b><small>平均濕度</small></div><div>💨<b>{wind.toFixed(1)} m/s</b><small>平均風速</small></div></div></div>
           <div className="card chart-card"><div className="cardtitle">氣象資料圖表 <small className="chart-subtitle">{area||"全台"}　{areaStations.length} 個測站</small></div><div className="metric-charts">
             <div className="metric-chart"><div className="metric-label">🌡 溫度 <b>{avg.toFixed(1)}°C</b></div><div className="bar-list">{areaStations.map(x=><div className="bar-row" key={x.station_id}><span>{x.station_name||x.station_id}</span><div className="bar-track"><i style={{width:(Math.min(100,Math.max(0,(x.temperature+10)/50*100)))+"%",background:tempColor(x.temperature)}}/></div><b>{x.temperature.toFixed(1)}°</b></div>)}</div></div>
-            <div className="metric-chart"><div className="metric-label">💧 水氣 / 濕度 <b>{humidity.toFixed(0)}%</b></div><div className="bar-list">{areaStations.slice(0,8).map(x=><div className="bar-row" key={x.station_id}><span>{x.station_name||x.station_id}</span><div className="bar-track"><i style={{width:((Number(x.humidity)||0))+"%"}}/></div><b>{x.humidity==null?"--":Number(x.humidity).toFixed(0)+"%"}</b></div>)}</div></div>
+            <div className="metric-chart"><div className="metric-label">💧 水氣 / 濕度 <b>{humidity.toFixed(0)}%</b></div><div className="bar-list">{areaStations.map(x=><div className="bar-row" key={x.station_id}><span>{x.station_name||x.station_id}</span><div className="bar-track"><i style={{width:((Number(x.humidity)||0))+"%"}}/></div><b>{x.humidity==null?"--":Number(x.humidity).toFixed(0)+"%"}</b></div>)}</div></div>
             <div className="metric-chart"><div className="metric-label">💨 風速 <b>{wind.toFixed(1)} m/s</b></div><div className="bar-list">{areaStations.slice(0,8).map(x=><div className="bar-row" key={x.station_id}><span>{x.station_name||x.station_id}</span><div className="bar-track"><i style={{width:(Math.min(100,(Number(x.wind_speed)||0)/15*100))+"%"}}/></div><b>{x.wind_speed==null?"--":Number(x.wind_speed).toFixed(1)+" m/s"}</b></div>)}</div></div>
           </div></div>
           <div className="card"><div className="cardtitle">縣市氣象觀測<select value={county}onChange={e=>choose(e.target.value)}>{counties.map(x=><option key={x}>{x}</option>)}</select></div><div className="countygrid">{counties.filter(x=>x!=="全部").map(c=>{const a=s.filter(x=>x.county===c),av=a.length?a.reduce((z,x)=>z+x.temperature,0)/a.length:null;return <button className={area===c?"countybtn selected":"countybtn"} key={c} onClick={()=>choose(c)}><span>{c}</span><b>{av==null?"--":av.toFixed(1)}°</b><small>{a.length} 測站</small></button>})}</div></div>
