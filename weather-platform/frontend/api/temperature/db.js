@@ -100,7 +100,7 @@ export async function queryHistory(county, date) {
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     try {
-      await importHistoricalYear(database, target, year, row => {
+      const importedRows = await importHistoricalYear(database, target, year, row => {
         insert.run(
           row.station_id, row.station_name, row.county, row.town,
           row.observed_at, row.temperature, row.humidity, row.wind_speed, row.rain
