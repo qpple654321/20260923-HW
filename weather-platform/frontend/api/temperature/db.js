@@ -123,7 +123,7 @@ export async function queryHistory(county, date) {
              ROUND(AVG(humidity),0) AS avgHumidity,
              ROUND(AVG(wind_speed),1) AS avgWind
       FROM WeatherObservations
-      WHERE substr(observed_at,1,10) BETWEEN date(?, '-3 day') AND date(?, '+3 day')
+      WHERE substr(observed_at,1,10) BETWEEN date(?, '-6 day') AND date(?)
         AND station_id NOT LIKE 'CWA:%'
       GROUP BY substr(observed_at,1,10)
       ORDER BY date
