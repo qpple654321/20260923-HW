@@ -57,9 +57,10 @@ export function saveObservations(stations) {
   for (const s of stations) {
     if (!s.county || s.temperature == null || !s.observed_at) continue;
     const date = s.observed_at.slice(0, 10);
-    const list = grouped.get(s.county) || [];
+    const key = s.county + "|" + date;
+    const list = grouped.get(key) || [];
     list.push(Number(s.temperature));
-    grouped.set(s.county, list);
+    grouped.set(key, list);
   }
 
   const upsert = database.prepare(`
@@ -68,10 +69,11 @@ export function saveObservations(stations) {
     ON CONFLICT(regionName, dataDate) DO UPDATE SET
       min=excluded.min, max=excluded.max, avg=excluded.avg
   `);
-  for (const [region, values] of grouped) {
+  for (const [key, values] of grouped) {
+    const [region, date] = key.split("|");
     upsert.run(
       region,
-      [...(values.length ? [new Date().toISOString().slice(0, 10)] : [])][0] || "",
+      date,
       Math.min(...values),
       Math.max(...values),
       values.reduce((a, b) => a + b, 0) / values.length
