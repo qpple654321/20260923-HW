@@ -112,7 +112,7 @@ export function queryHistory(county, date) {
 
   const datesSql = target
     ? "SELECT DISTINCT substr(observed_at,1,10) AS dataDate FROM WeatherObservations WHERE county=? ORDER BY dataDate DESC LIMIT 30"
-    : "SELECT DISTINCT substr(observed_at,1,10) AS dataDate FROM WeatherObservations ORDER BY dataDate DESC LIMIT 30";
+    : "SELECT DISTINCT substr(observed_at,1,10) AS dataDate FROM WeatherObservations ORDER BY dataDate DESC LIMIT 3650";
   const dates = target
     ? database.prepare(datesSql).all(target)
     : database.prepare(datesSql).all();
